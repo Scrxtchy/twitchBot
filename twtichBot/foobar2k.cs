@@ -12,16 +12,17 @@ namespace twtichBot
     {
 		private string url;
 		private static readonly HttpClient httpClient = new HttpClient();
-		private playlist _playlist;
+		private List<song> _playlist;
 
-		public playlist Playlist { get => _playlist;}
+		public List<song> Playlist { get => _playlist; }
 
 		public foobar2k(string IP, string Port)
 		{
 			url = string.Format("http://{0}:{1}", IP, Port);
 			System.Threading.Tasks.Task.Run(async () =>
 			{
-				_playlist = new playlist(await GetPlaylist());
+				_playlist = new List<song>();
+				_playlist.AddRange(await GetPlaylist());
 			});
 
 		}
@@ -44,6 +45,12 @@ namespace twtichBot
 			}
 		}
 
+		async public void updatePlaylist()
+		{
+			_playlist.Clear(); //GC? get gud
+			_playlist.AddRange(await GetPlaylist());
+		}
+
 		async public Task<string> GetCurrentSong()
 		{
 			return JsonConvert.DeserializeObject<song>(await getUrlAsync("/nowPlaying/?param3=nowPlaying.json")).ToString();
@@ -51,14 +58,32 @@ namespace twtichBot
 
 		async public Task<List<song>> GetPlaylist()
 		{
-			var result1 = await getUrlAsync("/playlistView/?param3=playlist.json");
-			return JsonConvert.DeserializeObject<List<song>>(result1);
+			var playlist = await getUrlAsync("/playlistView/?param3=playlist.json");
+			return JsonConvert.DeserializeObject<List<song>>(playlist);
 		}
 
 		async public Task<song> playSong(int index)
 		{
 			await getUrlAsync("/default/?cmd=QueueItems&param1=" + index.ToString());
-			return Playlist.List.ToArray()[index];
+			return Playlist.ToArray()[index];
+		}
+
+		async public Task<song> queueSong(song Song)
+		{
+			await getUrlAsync("/default/?cmd=QueueItems&param1=" + Playlist.FindIndex(song=> song.ToString().Equals(Song.ToString())));
+			return Song;
+		}
+
+		async public void nextSong()
+		{
+			await getUrlAsync("/default/?cmd=StartNext");
+		}
+
+		async public Task<List<song>> searchLibrary(string searchQuery)
+		{
+			var searchPlaylist = await (getUrlAsync("/playlistView/?cmd=SearchMediaLibrary&param1=" + searchQuery));
+			await (getUrlAsync("/default/?cmd=SwitchPlaylist&param1=0"));
+			return JsonConvert.DeserializeObject<List<song>>(searchPlaylist);
 		}
 	}
 
@@ -74,33 +99,6 @@ namespace twtichBot
 		public override string ToString()
 		{
 			return string.Format("{0} -- {1} [{2}]", artist, track, album);
-		}
-	}
-
-	public class playlist
-	{
-		private List<song> _list;
-
-		public List<song> List { get => _list; }
-
-		public playlist(){}
-
-		public playlist(List<song> Songs)
-		{
-			_list = Songs;
-		}
-
-		public void appendSong(song Song)
-		{
-			_list.Add(Song);
-		}
-
-		public void appendSong(List<song> Songs)
-		{
-			foreach (var Song in Songs)
-			{
-				List.Add(Song);
-			}
 		}
 	}
 }

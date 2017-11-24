@@ -36,17 +36,39 @@ namespace twtichBot
 				switch (e.Command.CommandText.ToLower())
 				{
 					case "song":
-
-						var x = await fb2k.GetCurrentSong();
-						irc.SendMessage("Now Playing: " + x);
+						var currentSong = await fb2k.GetCurrentSong();
+						irc.SendMessage("Now Playing: " + currentSong);
 						break;
 					case "random":
 						Random rand = new Random();
-						int target = rand.Next(Fb2k.Playlist.List.Count);
+						int target = rand.Next(Fb2k.Playlist.Count);
 						song random = await Fb2k.playSong(target);
 						irc.SendMessage("Queued Random Song: " + random);
 						break;
-
+					case "skip":
+						Fb2k.nextSong();
+						irc.SendMessage("Track Skipped");
+						break;
+					case "request":
+						//song request = await Fb2k.playSong(int.Parse(e.Command.ArgumentsAsString));
+						//irc.SendMessage("Requested " + request);
+						//Search(e.Command.ArgumentsAsString)
+						List<song> requestQuery = await Fb2k.searchLibrary(e.Command.ArgumentsAsString);
+						if (requestQuery.Count < 8)
+						{
+							await Fb2k.queueSong(requestQuery[0]);
+							irc.SendMessage("Queued " + requestQuery[0]);
+						}
+						break;
+					case "search":
+						var searchQuery = await Fb2k.searchLibrary(e.Command.ArgumentsAsString);
+						irc.SendMessage(string.Format("Search returned {0} results", searchQuery.Count));
+						break;
+					case "uptime":
+						//await api.Users.helix.GetUsersAsync(logins: channelList);
+						TimeSpan uptime = (TimeSpan) await api.Streams.v5.GetUptimeAsync("90707410"); //TODO: Needs to be made dynamic
+						irc.SendMessage(string.Format("Streaming for {0} Hours and {1} Minutes", uptime.Hours, uptime.Minutes));
+						break;
 				}
 			});
 		}
