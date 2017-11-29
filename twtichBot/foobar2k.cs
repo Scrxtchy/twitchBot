@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using System.IO;
 
 namespace twtichBot
 {
-    public class foobar2k
+	public class foobar2k
     {
 		private string url;
 		private static readonly HttpClient httpClient = new HttpClient();
 		private List<song> _playlist;
+		private Library _library;
 
 		public List<song> Playlist { get => _playlist; }
+		public Library Library { get => _library; }
 
 		public foobar2k(string IP, string Port)
 		{
@@ -22,7 +22,9 @@ namespace twtichBot
 			System.Threading.Tasks.Task.Run(async () =>
 			{
 				_playlist = new List<song>();
+				_library = new Library();
 				_playlist.AddRange(await GetPlaylist());
+				_library.Process(_playlist);
 			});
 
 		}
@@ -45,10 +47,13 @@ namespace twtichBot
 			}
 		}
 
-		async public void updatePlaylist()
+		async public Task<int> updatePlaylist()
 		{
 			_playlist.Clear(); //GC? get gud
 			_playlist.AddRange(await GetPlaylist());
+			_library.Albums.Clear();
+			_library.Process(_playlist);
+			return _playlist.Count;
 		}
 
 		async public Task<string> GetCurrentSong()
@@ -62,7 +67,7 @@ namespace twtichBot
 			return JsonConvert.DeserializeObject<List<song>>(playlist);
 		}
 
-		async public Task<song> playSong(int index)
+		async public Task<song> queueSong(int index)
 		{
 			await getUrlAsync("/default/?cmd=QueueItems&param1=" + index.ToString());
 			return Playlist.ToArray()[index];
@@ -89,16 +94,105 @@ namespace twtichBot
 
 	public class song
 	{
-#pragma warning disable IDE1006 // Naming Styles
-		public string artist { get; set; }
-#pragma warning disable IDE1006 // Naming Styles
-		public string track { get; set; }
-#pragma warning restore IDE1006 // Naming Styles
-		public string album { get; set; }
+		public string Artist { get; set; }
+		public string Track { get; set; }
+		public string Album { get; set; }
+		public int Index { get; set; }
 
 		public override string ToString()
 		{
-			return string.Format("{0} -- {1} [{2}]", artist, track, album);
+			return string.Format("{0} -- {1} [{2}]", Artist, Track, Album);
+		}
+
+		public bool ShouldSerializeAlbum()
+		{
+			return false;
+		}
+	}
+
+	public class Album
+	{
+
+		private string title;
+		private List<song> songs;
+		public string Title { get => title; }
+		public List<song> Songs { get => songs; }
+
+		public Album(string Title)
+		{
+			title = Title;
+			songs = new List<song>();
+		}
+
+		public Album(string Title, List<song> Songs)
+		{
+			title = Title;
+			songs = Songs;
+		}
+
+
+
+		public void AddSong(song Song)
+		{
+			songs.Add(Song);
+		}
+
+		public override string ToString()
+		{
+			return string.Format("[{0}]", title);
+		}
+	}
+
+	public class Library
+	{
+		private List<Album> _albums;
+		public Library()
+		{
+			_albums = new List<Album>();
+		}
+
+		public List<Album> Albums { get => _albums; }
+
+		public void AddAlbum(Album album)
+		{
+			Albums.Add(album);
+		}
+
+		public string DumpAlbums()
+		{
+			var logPath = System.IO.Path.GetTempFileName();
+			var logFile = System.IO.File.Create(logPath);
+			var logWriter = new System.IO.StreamWriter(logFile);
+			logWriter.WriteLine(JsonConvert.SerializeObject(Albums));
+			logWriter.Dispose();
+			return logFile.Name;
+		}
+
+		public void Process(List<song> Songs)
+		{
+			int i = 0;
+			foreach (song Song in Songs)
+			{
+				try
+				{
+					Song.Index = i;
+					Albums.Find(album => album.Title.Equals(Song.Album)).AddSong(Song);
+				} catch(NullReferenceException)
+				{
+					AddAlbum(new Album(Song.Album));
+					Albums.Find(album => album.Title.Equals(Song.Album)).AddSong(Song);
+				}
+				i++;
+			}
+			Console.WriteLine(@"
+███████╗██████╗ ██████╗ ██╗  ██╗
+██╔════╝██╔══██╗╚════██╗██║ ██╔╝
+█████╗  ██████╔╝ █████╔╝█████╔╝ 
+██╔══╝  ██╔══██╗██╔═══╝ ██╔═██╗ 
+██║     ██████╔╝███████╗██║  ██╗
+╚═╝     ╚═════╝ ╚══════╝╚═╝  ╚═╝
+");
+
 		}
 	}
 }

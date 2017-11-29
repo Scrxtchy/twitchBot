@@ -42,7 +42,7 @@ namespace twtichBot
 					case "random":
 						Random rand = new Random();
 						int target = rand.Next(Fb2k.Playlist.Count);
-						song random = await Fb2k.playSong(target);
+						song random = await Fb2k.queueSong(target);
 						irc.SendMessage("Queued Random Song: " + random);
 						break;
 					case "skip":
@@ -50,14 +50,23 @@ namespace twtichBot
 						irc.SendMessage("Track Skipped");
 						break;
 					case "request":
-						//song request = await Fb2k.playSong(int.Parse(e.Command.ArgumentsAsString));
-						//irc.SendMessage("Requested " + request);
-						//Search(e.Command.ArgumentsAsString)
-						List<song> requestQuery = await Fb2k.searchLibrary(e.Command.ArgumentsAsString);
-						if (requestQuery.Count < 8)
-						{
-							await Fb2k.queueSong(requestQuery[0]);
-							irc.SendMessage("Queued " + requestQuery[0]);
+						if (int.TryParse(e.Command.ArgumentsAsString, out int index)) {
+							irc.SendMessage("Queued " + await Fb2k.queueSong(index));
+						}
+						else {
+
+							//song request = await Fb2k.playSong(int.Parse(e.Command.ArgumentsAsString));
+							//irc.SendMessage("Requested " + request);
+							//Search(e.Command.ArgumentsAsString)
+							List<song> requestQuery = await Fb2k.searchLibrary(e.Command.ArgumentsAsString);
+							if (requestQuery.Count < 8)
+							{
+								await Fb2k.queueSong(requestQuery[0]);
+								irc.SendMessage("Queued " + requestQuery[0]);
+							} else
+							{
+								irc.SendMessage("Too many results, Nothing queued");
+							}
 						}
 						break;
 					case "search":
@@ -69,13 +78,25 @@ namespace twtichBot
 						TimeSpan uptime = (TimeSpan) await api.Streams.v5.GetUptimeAsync("90707410"); //TODO: Needs to be made dynamic
 						irc.SendMessage(string.Format("Streaming for {0} Hours and {1} Minutes", uptime.Hours, uptime.Minutes));
 						break;
+					case "dump":
+						irc.SendMessage("Dumped to: " + Fb2k.Library.DumpAlbums());
+						break;
+					case "update":
+						irc.SendRaw(string.Format("PRIVMSG #{0} :{2}ACTION playlist's updated with {1} songs{2}", e.Command.ChatMessage.Channel ,await fb2k.updatePlaylist(), '\x01'));
+						break;
+					case "trello":
+						irc.SendMessage("Bot Trello Link: https://trello.com/b/99XsqKc7");
+						break;
+					case "github":
+						irc.SendMessage("Github Link https://github.com/scrxtchy/twitchBot");
+						break;
 				}
 			});
 		}
 
 		private void onJoinedChannel(object sender, OnJoinedChannelArgs e)
 		{
-			//irc.SendMessage("Kappa");
+			irc.SendRaw(string.Format("PRIVMSG #{0} :{2}ACTION now online with {1} songs{2}", e.Channel, Fb2k.Playlist.Count, '\x01'));
 		}
 
 		public void kill()
