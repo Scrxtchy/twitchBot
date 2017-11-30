@@ -88,7 +88,10 @@ namespace twtichBot
 						irc.SendMessage("Bot Trello Link: https://trello.com/b/99XsqKc7");
 						break;
 					case "github":
-						irc.SendMessage("Github Link https://github.com/scrxtchy/twitchBot");
+						irc.SendMessage("Github Link: https://github.com/scrxtchy/twitchBot");
+						break;
+					case "list":
+						irc.SendMessage("Songs List: https://scrxtchy.github.io/twitchBot/?list=QmTNsPd8zVDGuZGM3SD8sZZySZBM2uPM1x3es6eRap8zSB/libraryList.json");
 						break;
 				}
 			});
