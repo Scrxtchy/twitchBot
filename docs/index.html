@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Hello, world!</title>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>	<!-- Bootstrap CSS -->
+	
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/css/bootstrap.css" integrity="sha384-0v58XY5lfkfzopmNIGgWqCnB1OdYO+qAlqkfhiD+0ckSclpyZx2+QAdwqaB2BIy6" crossorigin="anonymous">
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> 
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap.min.css" integrity="sha384-VEpVDzPR2x8NbTDZ8NFW4AWbtT2g/ollEzX/daZdW/YvUBlbgVtsxMftnJ84k0Cn" crossorigin="anonymous"> 
+</head>
+<body>
+	<table id="example" class="table table-striped compact" width="100%"></table>
+
+	
+	<script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js" integrity="sha384-Z9D45cp3elqajO+xEyjRTIK1Gr3eYsXiyCPIKNog1sIQzpo2fqFDqFdADGiJjzOv" crossorigin="anonymous"></script> 
+	<script src="https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js" integrity="sha384-ldQcdLcQS6WdInz7/H5EvUsc+DFY6IZGZkAzFAOln7RKseNuPvXOm9txFW6hr8rI" crossorigin="anonymous"></script>
+
+
+	<script type="text/javascript">
+
+		function status(response) {
+			if (response.status >= 200 && response.status < 300) {
+				return Promise.resolve(response)
+			} else {
+				return Promise.reject(new Error(response.statusText))
+			}
+		}
+
+		function json(response) {
+			return response.json()
+		}
+
+		$(document).ready(function(){
+			fetch("https://ipfs.io/ipfs/" + new URL(window.location).searchParams.get('list'))
+				.then(status)
+				.then(json)
+				.then(function(json){
+					tableData = []
+					json.forEach(function(album){
+						//let title = album.Title
+						album.Songs.forEach(function(song){
+							tableData.push([song.Index, song.Track, album.Title, song.Artist])
+						})
+					})
+
+
+					$('#example').DataTable({
+						data: tableData,
+						columns: [
+							{title: 'Index'},
+							{title: 'Title'},
+							{title: 'Album'},
+							{title: 'Artist'}
+						],
+						"iDisplayLength": 50,
+						"dom": '<"top"ifp<"clear">>rt'
+					})
+				})
+			})
+	</script>
+</body>
+</html>
