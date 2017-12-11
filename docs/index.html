@@ -35,7 +35,7 @@
 		}
 
 		$(document).ready(function(){
-			fetch("https://ipfs.io/ipfs/" + new URL(window.location).searchParams.get('list'))
+			fetch("https://rn2066.blob.core.windows.net/twitch/libraryList.json")
 				.then(status)
 				.then(json)
 				.then(function(json){
